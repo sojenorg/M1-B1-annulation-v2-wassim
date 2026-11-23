@@ -1,6 +1,17 @@
 # Escale Atlantique — Ré-entraînement du modèle d'annulation (v2)
 
-> Squelette de départ du brief **M1-B1** (FastIA).
+> Brief **M1-B1** (FastIA), réalisé à partir du squelette `twentz29/Dev-IA-parcours-m1-b1`.
+
+<!-- toc -->
+## Sommaire
+
+- [Le contexte](#le-contexte)
+- [Structure](#structure)
+- [Démarrage](#démarrage)
+- [Ré-entraîner le modèle](#ré-entraîner-le-modèle)
+- [La base](#la-base)
+- [Données](#données)
+<!-- /toc -->
 
 ## Le contexte
 
@@ -16,11 +27,16 @@ db/init/                  # schéma + historique chargés au 1er démarrage de l
   02_load.sql
   data/reservations.csv   # 78 703 réservations, juillet 2015 → décembre 2016
 notebooks/
-  01_exploration.ipynb    # point de départ : connexion, exploration SQL, chargement
+  01_exploration.ipynb    # tâches 1 à 3 : connexion, exploration SQL, chargement et découpage
+  02_modelisation.ipynb   # tâches 4 à 8 : fuite de données, v1 rejouée, pipeline v2, réglage, verdict
+  essais_hyperparametres.csv  # trace des essais de réglage (tâche 7)
 model/
-  train_baseline.py       # recette de la v1, à réutiliser pour la rejouer (tâche 5)
-train.py                  # script d'entraînement final, à compléter (tâche 9)
-RESULTATS.md              # résultats, à compléter
+  train_baseline.py       # recette de la v1, réutilisée pour la rejouer (tâche 5)
+  cancellation_model_v2.joblib  # modèle v2, produit par train.py
+  model_info_v2.json      # fiche du modèle v2, produite par train.py
+features.py               # colonnes écartées, colonnes d'entrée, variables nouvelles (add_features)
+train.py                  # script d'entraînement final (tâche 9)
+RESULTATS.md              # démarche, fuite de données, tableau v1 / v2, recommandation
 ```
 
 ## Démarrage
@@ -45,6 +61,18 @@ pip install -r requirements.txt
 Puis ouvre `notebooks/01_exploration.ipynb` (dans VS Code ou Jupyter) et exécute les premières cellules.
 
 Pour arrêter la base : `docker compose down`. Les données sont conservées. Pour **repartir d'une base neuve** (le chargement se refait au démarrage suivant) : `docker compose down -v`.
+
+## Ré-entraîner le modèle
+
+La base doit être démarrée et *healthy*.
+
+```bash
+python train.py
+```
+
+Le script charge les réservations par une requête SQL, met de côté les 4 derniers mois d'arrivée, valide le pipeline par validation croisée temporelle, l'entraîne et l'évalue sur le jeu de test. Il écrit `model/cancellation_model_v2.joblib` et `model/model_info_v2.json`. Les résultats sont dans [RESULTATS.md](RESULTATS.md).
+
+Pour charger le modèle ailleurs (API), `features.py` doit être importable : le modèle enregistré référence la fonction `add_features`.
 
 ## La base
 
